@@ -1,0 +1,14 @@
+name = "" # todo
+main = "./src/index.ts"
+compatibility_date = "2023-04-25"
+
+kv_namespaces = [
+    { binding = "KV", id = "<YOUR_KV_ID>" } # todo
+]
+
+[env.dev]
+name = "dev"
+vars = { ENVIRONMENT = "dev" }
+kv_namespaces = [
+	{ binding = "KV", id = "<YOUR_KV_ID>", preview_id = "<YOUR_KV_ID>" } # todo
+]
