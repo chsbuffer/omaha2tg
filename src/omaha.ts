@@ -3,8 +3,14 @@ let apps: { [key: string]: string } = {
 	"{8237E44A-0054-442C-B6B6-EA0509993955}": "Google Chrome Beta",
 	"{401C381F-E0DE-4B85-8BD8-3F3F14FBDA57}": "Google Chrome Dev",
 	"{4ea16ac7-fd5a-47c3-875b-dbf4a2008c20}": "Google Chrome Canary",
-	"{47B07D71-505D-4665-AFD4-4972A30C6530}": "HPE",
-	"{232066FE-FF4D-4C25-83B4-3F8747CF7E3A}": "Nearby Better Together"
+	"{47B07D71-505D-4665-AFD4-4972A30C6530}": "Google Play Games Beta",
+	"{232066FE-FF4D-4C25-83B4-3F8747CF7E3A}": "Nearby Share Beta"
+}
+
+let apps_ogimg: { [key: string]: any } = {
+	"{8A69D345-D564-463C-AFF1-A69D9E530F96}": "https://www.google.com/chrome/static/images/homepage/homepage.png",
+	"{47B07D71-505D-4665-AFD4-4972A30C6530}": "https://www.gstatic.com/play/games/pc/googleplaygames-beta-opengraph-7ab5c9b4.png",
+	"{232066FE-FF4D-4C25-83B4-3F8747CF7E3A}": "https://lh3.googleusercontent.com/iGXEZbCz1Qo1b3PtgoUZhkLQMOySwqPrEtv9VrAUdOvCCSe4Ke_5S42c8J9N75Rs9Cej9MuiSEHUfOXfK5TaTVf3BUbkxl60uMCOt4fANX19Tnsb9g"
 }
 
 let apps_extra: { [key: string]: any } = {
@@ -47,4 +53,4 @@ async function make_body(kv: KVNamespace) {
 	return body
 }
 
-export {apps, make_body}
+export {apps, apps_ogimg, make_body}

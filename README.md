@@ -1,6 +1,6 @@
 # omaha2tg
 
-Source code for https://t.me/google_omaha 
+Source code for https://t.me/google_omaha
 
 a Google product update checker.
 
@@ -23,4 +23,3 @@ Create file `.dev.vars` to set dev env vars. format `<key>=<value>`
 ## TODO
 
 - WebHook register not implemented, require request to Telegram Bot API `setWebhook` method manually. see `src/register.js`
-- Improve message.
