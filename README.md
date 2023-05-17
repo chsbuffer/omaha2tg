@@ -23,3 +23,9 @@ Create file `.dev.vars` to set dev env vars. format `<key>=<value>`
 ## TODO
 
 - WebHook register not implemented, require request to Telegram Bot API `setWebhook` method manually. see `src/register.js`
+
+## Reference
+
+[chromium/src/+/main:docs/updater/protocol_3_1.md](https://source.chromium.org/chromium/chromium/src/+/main:docs/updater/protocol_3_1.md)
+
+[omaha/blob/main/doc/ServerProtocolV3.md](https://github.com/google/omaha/blob/main/doc/ServerProtocolV3.md)

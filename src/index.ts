@@ -1,6 +1,5 @@
 import TelegramBot from "./telegram_bot";
 import { apps, make_body } from "./omaha";
-import { js2xml, xml2js } from "xml-js";
 
 const array = require("lodash/array");
 const string = require("lodash/string");
@@ -26,20 +25,16 @@ interface Environment {
 	BOT_SECRET_TOKEN: string;
 }
 
-function castArray<T>(value: T | T[]): T[] {
-	return Array.isArray(value) ? value : [value];
-}
-
 function apply<T, S>(value: T, expr: (obj: T) => S): S {
 	return expr(value);
 }
 
 async function make_message(bot: TelegramBot, env: Environment, app: any, app_fallback: any) {
-	const appid = app._attributes.appid;
+	const appid = app.appid;
 	const info = apps[appid];
 	const appname = info.name ?? appid;
 
-	if (app.updatecheck._attributes.status !== "ok") {
+	if (app.updatecheck.status !== "ok") {
 		console.log(`No update for ${appname}`);
 		return;
 	}
@@ -47,8 +42,8 @@ async function make_message(bot: TelegramBot, env: Environment, app: any, app_fa
 	let msg: string[] = [];
 
 	var updatecheck = app.updatecheck;
-	const version = updatecheck.manifest._attributes.version;
-	if (app_fallback?.updatecheck?.manifest?._attributes?.version === version) {
+	const version = updatecheck.manifest.version;
+	if (app_fallback?.updatecheck?.manifest?.version === version) {
 		// assume that when the versions are the same, then they are the same build.
 		updatecheck = app_fallback.updatecheck;
 	}
@@ -59,33 +54,28 @@ async function make_message(bot: TelegramBot, env: Environment, app: any, app_fa
 	}
 	msg.push("\n");
 
-	msg.push(`Channel: ${app._attributes.cohortname}\n`);
+	msg.push(`Channel: ${app.cohortname}\n`);
 	// Link
 	const url = apply(
-		castArray(updatecheck.urls.url),
+		updatecheck.urls.url,
 		urls =>
-			urls.find(s => s._attributes.codebase.startsWith("https://dl.google.com")) ?? urls.at(-1),
+			urls.find((s: any) => s.codebase.startsWith("https://dl.google.com")) ?? urls.at(-1),
 	);
-	const urlbase = url._attributes.codebase;
-	const pkg = castArray(updatecheck.manifest.packages.package).at(-1);
-	msg.push(`Link: ${urlbase}${pkg._attributes.name}\n`);
+	const urlbase = url.codebase;
+	const pkg = updatecheck.manifest.packages.package.at(-1);
+	msg.push(`Link: ${urlbase}${pkg.name}\n`);
 
 	// Arguments
-	const install_action = castArray(updatecheck.manifest.actions.action).find(
-		a => a._attributes.event === "install" || a._attributes.event === "update",
-	);
-	if (install_action?._attributes?.arguments) {
+	if (updatecheck.manifest.arguments) {
 		msg.push(
-			`${string.upperFirst(install_action._attributes.event)} Arguments: <code>${string.escape(
-				install_action._attributes.arguments,
-			)}</code>\n`,
+			`Arguments: <code>${string.escape(updatecheck.manifest.arguments)}</code>\n`,
 		);
 	}
 
 	// SHA256, Size
 	msg.push(
-		`SHA256: <code>${pkg._attributes.hash_sha256}</code>\nSize: ${(
-			parseInt(pkg._attributes.size) /
+		`SHA256: <code>${pkg.hash_sha256}</code>\nSize: ${(
+			parseInt(pkg.size) /
 			1024 ** 2
 		).toFixed(2)} MiB`,
 	);
@@ -133,20 +123,21 @@ export default {
 		const bot = new TelegramBot(env.BOT_TOKEN, api);
 
 		// update check (Worker KV saved versions)
-		let resp = await fetch("https://update.googleapis.com/service/update2", {
+		let resp = await fetch("https://update.googleapis.com/service/update2/json", {
 			method: "POST",
-			body: js2xml(await make_body(env.KV), { compact: true }),
+			body: JSON.stringify(await make_body(env.KV)),
 		});
 		if (!resp.ok) {
 			console.log(`post update2 failed: ${resp.status} ${resp.statusText}`);
 			return;
 		}
-		let update2: any = xml2js(await resp.text(), { compact: true });
+		let respText = await resp.text();
+		let update2: any = JSON.parse(respText.substring(5)); // remove Safe JSON Prefixes
 
 		// update check (no version)
-		let resp_fallback = await fetch("https://update.googleapis.com/service/update2", {
+		let resp_fallback = await fetch("https://update.googleapis.com/service/update2/json", {
 			method: "POST",
-			body: js2xml(await make_body(), { compact: true }),
+			body: JSON.stringify(await make_body()),
 		});
 		if (!resp_fallback.ok) {
 			console.log(
@@ -154,11 +145,11 @@ export default {
 			);
 			return;
 		}
-		let update2_fallback: any = xml2js(await resp_fallback.text(), { compact: true });
+		let update2_fallback: any = JSON.parse((await resp_fallback.text()).substring(5));
 
 		for (const apps_and_fallback of array.zip(
-			castArray(update2.response.app),
-			castArray(update2_fallback.response.app),
+			update2.response.app,
+			update2_fallback.response.app,
 		) as [[any, any]]) {
 			try {
 				await make_message(bot, env, ...apps_and_fallback);
@@ -167,7 +158,7 @@ export default {
 				await bot.sendMessage(
 					env.OWNER_ID,
 					`<code>${string.escape(e instanceof Error ? e.stack : e)}</code>\n\n<code>${string.escape(
-						await resp.text(),
+						respText,
 					)}</code>`,
 				);
 			}

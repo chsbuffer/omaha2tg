@@ -24,7 +24,8 @@ let apps: { [key: string]: any } = {
 	"{232066FE-FF4D-4C25-83B4-3F8747CF7E3A}": {
 		name: "Nearby Share Beta",
 		tag: "NearbyShare",
-		ogimg: "https://lh3.googleusercontent.com/iGXEZbCz1Qo1b3PtgoUZhkLQMOySwqPrEtv9VrAUdOvCCSe4Ke_5S42c8J9N75Rs9Cej9MuiSEHUfOXfK5TaTVf3BUbkxl60uMCOt4fANX19Tnsb9g",
+		ogimg:
+			"https://lh3.googleusercontent.com/iGXEZbCz1Qo1b3PtgoUZhkLQMOySwqPrEtv9VrAUdOvCCSe4Ke_5S42c8J9N75Rs9Cej9MuiSEHUfOXfK5TaTVf3BUbkxl60uMCOt4fANX19Tnsb9g",
 	},
 };
 
@@ -49,33 +50,48 @@ let apps_extra: { [key: string]: any } = {
 
 async function make_body(kv?: KVNamespace | undefined) {
 	let body = {
-		_declaration: {
-			_attributes: {
-				version: "1.0", encoding: "UTF-8",
+		request: {
+			"@os": "win",
+			// "@updater": "Omaha",
+			"@updater": "updater",
+			"acceptformat": "exe",
+			// "installsource": "ondemand",
+			"app": [],
+			"arch": "x64",
+			"dedup": "cr",
+			"domainjoined": false,
+			"hw": {
+				avx: true,
+				physmemory: 16,
+				sse: true,
+				sse2: true,
+				sse3: true,
+				sse41: true,
+				sse42: true,
+				ssse3: true,
 			},
-		}, request: {
-			_attributes: {
-				protocol: "3.0", updater: "Omaha",
-			}, hw: {
-				_attributes: {
-					physmemory: "16", sse: "1", sse2: "1", sse3: "1", ssse3: "1", sse41: "1", sse42: "1", avx: "1",
-				},
-			}, os: {
-				_attributes: {
-					platform: "win", version: "10.0", arch: "x64",
-				},
-			}, app: [],
+			"ismachine": 1,
+			"os": {
+				arch: "x64",
+				platform: "win",
+				version: "10.0.22622.0",
+			},
+			// "prodversion": "101.0.4949.0",
+			"protocol": "3.1",
+			// "requestid": "",
+			// "sessionid": "",
+			// "updaterversion": "101.0.4949.0",
 		},
 	};
 	for (const appid in apps) {
 		// @ts-ignore
 		body.request.app.push({
-			_attributes: {
-				appid: appid,
-				version: kv !== undefined ? (await kv.get(appid)) || "0.0.0.0" : "0.0.0.0",
-				...apps_extra[appid],
-			},
+			appid: appid,
+			// installsource: "ondemand",
+			// data: { index: "verboselog", name: "install" },
 			updatecheck: {},
+			version: kv !== undefined ? (await kv.get(appid)) || "0.0.0.0" : "0.0.0.0",
+			...apps_extra[appid],
 		});
 	}
 	return body;
