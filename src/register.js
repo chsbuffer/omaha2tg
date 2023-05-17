@@ -1,20 +1,21 @@
-const request = require('request-promise')
+const fetch = require("node-fetch");
 
 const token = process.env.BOT_TOKEN;
 
 const url = process.env.URL;
 // const url = ''; // to delete webhook, left url empty
 
-const api = `https://api.telegram.org/bot`
+const api = `https://api.telegram.org/bot`;
 
 // https://core.telegram.org/bots/api#setwebhook
 let body = {
 	url: url,
-}
-request({
+};
+
+fetch(api + token + "/setWebhook", {
 	method: "POST",
-	uri: api + token + "/setWebhook",
-	form: body
+	body: JSON.stringify(body),
+	headers: { "Content-Type": "application/json" },
 }).then((resp) => {
-	console.log(resp)
-})
+	console.log(resp);
+});
