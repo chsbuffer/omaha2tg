@@ -27,6 +27,10 @@ let apps: { [key: string]: any } = {
 		ogimg:
 			"https://lh3.googleusercontent.com/iGXEZbCz1Qo1b3PtgoUZhkLQMOySwqPrEtv9VrAUdOvCCSe4Ke_5S42c8J9N75Rs9Cej9MuiSEHUfOXfK5TaTVf3BUbkxl60uMCOt4fANX19Tnsb9g",
 	},
+	"{C601E9A4-03B0-4188-843E-80058BF16EF9}": {
+		name: "Google Play Games Developer Emulator Stable",
+		tag: "GPG_Developer_Emulator_Stable",
+	},
 };
 
 let apps_extra: { [key: string]: any } = {
@@ -45,6 +49,9 @@ let apps_extra: { [key: string]: any } = {
 	},
 	"{47B07D71-505D-4665-AFD4-4972A30C6530}": {
 		ap: "beta",
+	},
+	"{C601E9A4-03B0-4188-843E-80058BF16EF9}": {
+		ap: "prod",
 	},
 };
 
