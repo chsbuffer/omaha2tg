@@ -6,16 +6,16 @@
 		"dev": "wrangler dev src/index.ts --local --env dev",
 		"dev-scheduled": "wrangler dev src/index.ts --local --test-scheduled --env dev",
 		"register": "node src/register.js",
-		"test": "vitest",
-		"start-stackblitz": "WRANGLER_SEND_METRICS=false wrangler dev src/index.ts --local"
+		"test": "vitest"
 	},
 	"devDependencies": {
-		"@cloudflare/workers-types": "^4.20230404.0",
+		"@cloudflare/workers-types": "^4.20231016.0",
+		"@types/lodash-es": "^4.17.12",
 		"node-fetch": "^2.6.11",
 		"vitest": "^0.24.5",
-		"wrangler": "^2.1.14"
+		"wrangler": "^3.0.0"
 	},
 	"dependencies": {
-		"lodash": "^4.17.21"
+		"lodash-es": "^4.17.21"
 	}
 }
