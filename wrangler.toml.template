@@ -1,14 +1,30 @@
-name = "" # todo
+# Configure wrangler.toml
+# https://developers.cloudflare.com/workers/wrangler/configuration
+
 main = "./src/index.ts"
 compatibility_date = "2023-04-25"
+workers_dev = false
 
-kv_namespaces = [
-    { binding = "KV", id = "<YOUR_KV_ID>" } # todo
-]
+###############
+# Online Production
+name = "<YOUR_WORKER_NAME>" # todo
+kv_namespaces = [{ binding = "KV", id = "<YOUR_KV_ID>" }] # todo
 
+[vars]
+BOT_TOKEN = "" # todo
+CHAT_ID = "" # todo
+OWNER_ID = "" # todo 
+
+###############
+# Local develop
 [env.dev]
 name = "dev"
-vars = { ENVIRONMENT = "dev" }
 kv_namespaces = [
-	{ binding = "KV", id = "<YOUR_KV_ID>", preview_id = "<YOUR_KV_ID>" } # todo
+    { binding = "KV", id = "<YOUR_KV_ID>", preview_id = "<YOUR_KV_PREVIEW_ID>" }, # todo
 ]
+
+[env.dev.vars]
+ENVIRONMENT = "dev"
+BOT_TOKEN = "" # todo
+CHAT_ID = ""   # todo
+OWNER_ID = ""  # todo

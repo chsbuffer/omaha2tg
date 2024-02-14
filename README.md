@@ -14,15 +14,7 @@ Create file `.dev.vars` to set dev env vars. format `<key>=<value>`
 
 `npm run dev`
 
-`npm run dev-scheduled`
-
-`URL=<> BOT_TOKEN=<> npm run register`
-
 `npm run deploy`
-
-## TODO
-
-- WebHook register not implemented, require request to Telegram Bot API `setWebhook` method manually. see `src/register.js`
 
 ## Reference
 

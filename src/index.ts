@@ -3,25 +3,12 @@ import { apps, make_body } from "./omaha";
 import { zip, escape } from "lodash-es";
 import { compareVer } from "./parse-version";
 
-class JsonResponse extends Response {
-	constructor(body?: any, init?: ResponseInit | Response) {
-		const jsonBody = JSON.stringify(body);
-		init = init || {
-			headers: {
-				"content-type": "application/json;charset=UTF-8",
-			},
-		};
-		super(jsonBody, init);
-	}
-}
-
 interface Environment {
 	KV: KVNamespace;
 	ENVIRONMENT: string;
 	BOT_TOKEN: string;
 	CHAT_ID: string;
 	OWNER_ID: string;
-	BOT_SECRET_TOKEN: string;
 }
 
 function apply<T, S>(value: T, expr: (obj: T) => S): S {
@@ -114,29 +101,6 @@ async function make_message(bot: TelegramBot, env: Environment, app: any, app_fa
 
 // noinspection JSUnusedGlobalSymbols
 export default {
-	async fetch(request: Request, env: Environment) {
-		if (request.method != "POST") {
-			return new Response(null, { status: 403 });
-		}
-
-		const signature = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
-		if (signature !== env.BOT_SECRET_TOKEN) {
-			return new Response(null, { status: 403 });
-		}
-
-		const msg: any = await request.json().catch(e => null);
-		if (!msg) {
-			return new Response(null, { status: 403 });
-		}
-
-		// response webhook
-		return new JsonResponse({
-			method: "sendMessage",
-			chat_id: msg.message.chat.id,
-			text: `hello! ${msg.message.chat.id}`,
-		});
-	},
-
 	async scheduled(event: ScheduledController, env: Environment) {
 		console.log(`schedule triggered: UTC ${new Date(event.scheduledTime).toISOString()}`);
 
@@ -175,7 +139,7 @@ export default {
 				await make_message(bot, env, ...apps_and_fallback);
 			} catch (e: any) {
 				console.log(e);
-				await bot.sendMessage(
+				bot.sendMessage(
 					env.OWNER_ID,
 					`<code>${escape(e instanceof Error ? e.stack : e)}</code>\n\n<code>${escape(
 						respText

@@ -9,3 +9,5 @@
 
 .dev.vars
 wrangler.toml
+.wrangler
+.vscode
