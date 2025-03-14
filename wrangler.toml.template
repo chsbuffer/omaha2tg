@@ -13,7 +13,7 @@ kv_namespaces = [{ binding = "KV", id = "<YOUR_KV_ID>" }] # todo
 [vars]
 BOT_TOKEN = "" # todo
 CHAT_ID = "" # todo
-OWNER_ID = "" # todo 
+OWNER_ID = "" # todo
 
 ###############
 # Local develop
@@ -24,7 +24,6 @@ kv_namespaces = [
 ]
 
 [env.dev.vars]
-ENVIRONMENT = "dev"
 BOT_TOKEN = "" # todo
 CHAT_ID = ""   # todo
 OWNER_ID = ""  # todo

@@ -8,13 +8,13 @@ Current checking products: see `src/omaha.ts`
 
 ## Notes
 
-nodejs 18.15.0, npm 9.6.5
+nodejs 20.18.3, yarn 1.22.22
 
-Create file `.dev.vars` to set dev env vars. format `<key>=<value>`
+`cp wrangler.toml.template wrangler.toml`
 
-`npm run dev`
+`yarn run dev`
 
-`npm run deploy`
+`yarn run deploy`
 
 ## Reference
 

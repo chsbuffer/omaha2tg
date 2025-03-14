@@ -1,67 +1,39 @@
 import TelegramBot from "./telegram_bot";
-import { apps, make_body } from "./omaha";
-import { zip, escape } from "lodash-es";
-import { compareVer } from "./parse-version";
+import { apps, do_update_check, AppFlavor } from "./omaha";
+import { escape } from "lodash-es";
 
 interface Environment {
 	KV: KVNamespace;
-	ENVIRONMENT: string;
 	BOT_TOKEN: string;
 	CHAT_ID: string;
 	OWNER_ID: string;
+	TELEGRAM_BOT_API?: string;
 }
 
 function apply<T, S>(value: T, expr: (obj: T) => S): S {
 	return expr(value);
 }
 
-async function make_message(bot: TelegramBot, env: Environment, app: any, app_fallback: any) {
+async function make_message(bot: TelegramBot, env: Environment, app: AppFlavor, resp: any) {
 	// this function weaving a Telegram HTML message from the `app`,
 	// send to the telegram session specified by CHAT_ID,
 	// and update the version string saved in Cloudflare KV
 
-	const appid = app.appid;
-	const current_version = (await env.KV.get(appid)) ?? "0.0.0.0";
-
-	const info = apps[appid];
-	const appname = info.name ?? appid;
-	if (app.updatecheck.status !== "ok") {
-		// "ok": An update is available and should be applied.
-		console.log(`No update for "${appname}" v${current_version}`);
-		return;
-	}
-
-	const version = app.updatecheck.manifest.version;
-	console.log(`found update for "${appname}" v${current_version}: v${version}`);
-	// select app_fallback when two versions are the same.
-	// this is because we don't like the incremental update package from `app`.
-	var updatecheck: any;
-	if (app_fallback?.updatecheck?.manifest?.version === version) {
-		updatecheck = app_fallback.updatecheck;
-	} else {
-		updatecheck = app.updatecheck;
-	}
-
-	// when server responsed version is lower than KV saved version ... fuck google.
-	if (compareVer(version, current_version) < 0) {
-		console.log(
-			`Server responsed "${appname}" v${version} is older than current version v${current_version}, ignored.`
-		);
-		return;
-	}
-
+	const appname = app.name;
+	const updatecheck = resp.updatecheck;
+	const version = updatecheck.manifest.version;
 	// #region weaving telegram html message
 
 	let msg: string[] = [];
 	// Product and version
 	msg.push(`${appname} <code>${version}</code>\n`);
-	if (info.tag) {
-		msg.push(`#${info.tag}\n`);
+	if (app.tag) {
+		msg.push(`#${app.tag}\n`);
 	}
 	msg.push("\n");
 
 	// Update Channel Name
-	msg.push(`Channel: ${app.cohortname}\n`);
+	msg.push(`Channel: ${resp.cohortname}\n`);
 	// Download Link
 	const url = apply(
 		updatecheck.urls.url,
@@ -87,8 +59,8 @@ async function make_message(bot: TelegramBot, env: Environment, app: any, app_fa
 
 	// send message to telegram
 	const message = "".concat(...msg);
-	let res = info.ogimg
-		? await bot.sendPhoto(env.CHAT_ID, info.ogimg, message)
+	let res = app.ogimg
+		? await bot.sendPhoto(env.CHAT_ID, app.ogimg, message)
 		: await bot.sendMessage(env.CHAT_ID, message);
 	if (!res.ok) {
 		console.log(`sendMsg err: ${res.statusText}`);
@@ -96,7 +68,26 @@ async function make_message(bot: TelegramBot, env: Environment, app: any, app_fa
 	}
 
 	// Upload latest version number to Cloudflare KV
-	await env.KV.put(appid, version);
+	await env.KV.put(app.tag, version);
+}
+
+async function kv_migrate(kv: KVNamespace) {
+	const USER_VERSION_KEY = "user_version"
+	let user_version = parseInt(await kv.get(USER_VERSION_KEY) || "0")
+	if (user_version < 1) kv_migrate_1(kv)
+	kv.put(USER_VERSION_KEY, "1")
+}
+
+async function kv_migrate_1(kv: KVNamespace) {
+	console.log("migrate to v1")
+	// Migrate kv key from appid to AppFlavor.tag
+	for (const app of apps) {
+		let version = await kv.get(app.guid)
+		if (version) {
+			kv.put(app.flavors[0].tag, version)
+			kv.delete(app.guid)
+		}
+	}
 }
 
 // noinspection JSUnusedGlobalSymbols
@@ -104,48 +95,19 @@ export default {
 	async scheduled(event: ScheduledController, env: Environment) {
 		console.log(`schedule triggered: UTC ${new Date(event.scheduledTime).toISOString()}`);
 
-		let api = env.ENVIRONMENT == "dev" ? "http://localhost:8081" : undefined;
-		const bot = new TelegramBot(env.BOT_TOKEN, api);
+		kv_migrate(env.KV)
 
-		// update check (Worker KV saved versions)
-		let resp = await fetch("https://update.googleapis.com/service/update2/json", {
-			method: "POST",
-			body: JSON.stringify(await make_body(env.KV)),
-		});
-		if (!resp.ok) {
-			console.log(`post update2 failed: ${resp.status} ${resp.statusText}`);
-			return;
-		}
-		let respText = await resp.text();
-		let update2: any = JSON.parse(respText.substring(5)); // remove Safe JSON Prefixes
-
-		// update check (no version)
-		let resp_fallback = await fetch("https://update.googleapis.com/service/update2/json", {
-			method: "POST",
-			body: JSON.stringify(await make_body()),
-		});
-		if (!resp_fallback.ok) {
-			console.log(
-				`post update2 (fallback) failed: ${resp_fallback.status} ${resp_fallback.statusText}`
-			);
-			return;
-		}
-		let update2_fallback: any = JSON.parse((await resp_fallback.text()).substring(5));
-
-		for (const apps_and_fallback of zip(update2.response.app, update2_fallback.response.app) as [
-			[any, any]
-		]) {
+		const bot = new TelegramBot(env.BOT_TOKEN, env.TELEGRAM_BOT_API);
+		await do_update_check(env.KV, async (appFlavor, updateCheckResponse) => {
 			try {
-				await make_message(bot, env, ...apps_and_fallback);
+				await make_message(bot, env, appFlavor, updateCheckResponse);
 			} catch (e: any) {
 				console.log(e);
 				bot.sendMessage(
 					env.OWNER_ID,
-					`<code>${escape(e instanceof Error ? e.stack : e)}</code>\n\n<code>${escape(
-						respText
-					)}</code>`
+					`<code>${escape(e instanceof Error ? e.stack : e)}</code>`
 				);
 			}
-		}
+		});
 	},
 };

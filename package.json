@@ -3,14 +3,12 @@
 	"version": "0.0.0",
 	"scripts": {
 		"deploy": "wrangler publish src/index.ts",
-		"dev": "wrangler dev src/index.ts --test-scheduled --env dev",
-		"test": "vitest"
+		"dev": "wrangler dev src/index.ts --test-scheduled --env dev"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20231016.0",
 		"@types/lodash-es": "^4.17.12",
-		"vitest": "^0.24.5",
-		"wrangler": "^3.0.0"
+		"wrangler": "^4.0.0"
 	},
 	"dependencies": {
 		"lodash-es": "^4.17.21"
