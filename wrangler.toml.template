@@ -2,7 +2,7 @@
 # https://developers.cloudflare.com/workers/wrangler/configuration
 
 main = "./src/index.ts"
-compatibility_date = "2023-04-25"
+compatibility_date = "2025-03-14"
 workers_dev = false
 
 ###############

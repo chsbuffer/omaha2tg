@@ -1,9 +1,11 @@
 import { zip } from "lodash-es";
 import { compareVer } from "./parse-version";
+import { app, response } from "OmahaResponse";
 
 interface AppFlavor {
 	tag: string;
 	name: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	extra?: any;
 	ogimg?: string;
 }
@@ -13,7 +15,7 @@ interface App {
 	flavors: AppFlavor[];
 }
 
-let apps: App[] = [
+const apps: App[] = [
 	{
 		guid: "{8A69D345-D564-463C-AFF1-A69D9E530F96}",
 		flavors: [
@@ -107,39 +109,37 @@ let apps: App[] = [
 ];
 
 type UpdateCheckCallback = {
-	(appFlavor: AppFlavor, updateCheckResponse: any): Promise<void>;
+	(appFlavor: AppFlavor, updateCheckApp: app): Promise<void>;
 }
 
-async function update_check_request(body: any): Promise<any> {
-	let resp = await fetch("https://update.googleapis.com/service/update2/json", {
+async function update_check_request(body: unknown): Promise<response> {
+	const resp = await fetch("https://update.googleapis.com/service/update2/json", {
 		method: "POST",
 		body: JSON.stringify(body),
 	});
 	if (!resp.ok) {
-		console.log(`post update2 failed: ${resp.status} ${resp.statusText}`);
-		return;
+		throw new Error(`post update2 failed: ${resp.status} ${resp.statusText}`);
 	}
-	let respText = await resp.text();
-	return JSON.parse(respText.substring(5)); // remove Safe JSON Prefixes
+	const respText = await resp.text();
+	return JSON.parse(respText.substring(5)) as response; // remove Safe JSON Prefixes
 }
 
 async function do_update_check(kv: KVNamespace, callback: UpdateCheckCallback) {
 	// Ensure that app ids are not duplicated in each request.
-	let depth = Math.max(...apps.map(x => x.flavors.length))
+	const depth = Math.max(...apps.map(x => x.flavors.length))
 	for (let i = 0; i < depth; i++) {
-		let body_update = default_body();
-		let body_new_install = default_body();
-		let flavors: AppFlavor[] = []
-		let versions: string[] = []
+		const body_update = default_body();
+		const body_new_install = default_body();
+		const flavors: AppFlavor[] = []
+		const versions: string[] = []
 		for (const app of apps) {
-			let flavor = app.flavors[i]
+			const flavor = app.flavors[i]
 			if (!flavor)
 				continue;
-			let version = await kv.get(flavor.tag) || "0.0.0.0";
+			const version = await kv.get(flavor.tag) || "0.0.0.0";
 			flavors.push(flavor)
 			versions.push(version)
 
-			// @ts-ignore
 			body_update.request.app.push({
 				appid: app.guid,
 				updatecheck: {},
@@ -147,7 +147,6 @@ async function do_update_check(kv: KVNamespace, callback: UpdateCheckCallback) {
 				...flavor.extra,
 			});
 
-			// @ts-ignore
 			body_new_install.request.app.push({
 				appid: app.guid,
 				updatecheck: {},
@@ -156,23 +155,21 @@ async function do_update_check(kv: KVNamespace, callback: UpdateCheckCallback) {
 			});
 		}
 
-		let update_response = await update_check_request(body_update);
-		let new_install_response = await update_check_request(body_new_install);
-		for (const [appFlavor, current_version, update, new_install] of zip(flavors, versions, update_response.response.app, new_install_response.response.app) as [[AppFlavor, string, any, any]]) {
+		const update_response = await update_check_request(body_update);
+		const new_install_response = await update_check_request(body_new_install);
+		for (const [appFlavor, current_version, update, new_install] of zip(flavors, versions, update_response.response.app, new_install_response.response.app)) {
+			if (!appFlavor || !current_version || !update || !new_install)
+				throw new Error("response apps count not match.");
 
 			const appname = appFlavor.name;
-			let updatecheck = update.updatecheck;
-			if (updatecheck.status !== "ok") {
+			if (update.updatecheck.status !== "ok") {
 				console.log(`No update for "${appname}" v${current_version}`);
 				continue;
 			}
 
-			const version = updatecheck.manifest.version;
-			console.log(`found update for "${appname}" v${current_version}: v${version}`);
-			// prefer new_install's full installer.
-			if (new_install.updatecheck?.manifest?.version === version) {
-				updatecheck = new_install.updatecheck;
-			}
+			const version = update.updatecheck.manifest.version;
+			const new_install_version = new_install.updatecheck.manifest.version;
+			console.log(`update for "${appname}" v${current_version}: v${version}, new install v${new_install_version}`);
 
 			if (compareVer(version, current_version) < 0) {
 				console.log(
@@ -181,7 +178,12 @@ async function do_update_check(kv: KVNamespace, callback: UpdateCheckCallback) {
 				continue;
 			}
 
-			await callback(appFlavor, update)
+			if (new_install_version === version) {
+				// prefer new_install's full installer.
+				await callback(appFlavor, new_install)
+			} else {
+				await callback(appFlavor, update)
+			}
 		}
 	} // flavor depth
 }
@@ -192,7 +194,7 @@ function default_body() {
 			"@os": "win",
 			"@updater": "updater",
 			"acceptformat": "exe",
-			"app": [],
+			"app": Array<unknown>(),
 			"arch": "x64",
 			"dedup": "cr",
 			"domainjoined": false,

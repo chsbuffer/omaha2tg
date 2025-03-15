@@ -24,8 +24,8 @@ function parseVersion(versionString: string): Version {
 }
 
 function compareVer(v1: string, v2: string): number {
-	let thiz = parseVersion(v1);
-	let that = parseVersion(v2);
+	const thiz = parseVersion(v1);
+	const that = parseVersion(v2);
 	if (thiz.major != that.major) {
 		return thiz.major - that.major;
 	} else if (thiz.minor !== that.minor) {

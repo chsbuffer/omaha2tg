@@ -12,6 +12,8 @@ nodejs 20.18.3, yarn 1.22.22
 
 `cp wrangler.toml.template wrangler.toml`
 
+group id contains -100 prefix
+
 `yarn run dev`
 
 `yarn run deploy`

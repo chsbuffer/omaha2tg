@@ -5,7 +5,7 @@ export default class TelegramBot {
 		this.api = `${api}/bot${token}/`;
 	}
 
-	_fetch(method: string, body: any) {
+	_fetch(method: string, body: unknown) {
 		return fetch(this.api + method, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
