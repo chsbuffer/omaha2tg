@@ -74,9 +74,20 @@ async function make_message(bot: TelegramBot, env: Environment, appFlavor: AppFl
 
 async function kv_migrate(kv: KVNamespace) {
 	const USER_VERSION_KEY = "user_version"
+	const LATEST_VERSION = 1
 	const user_version = parseInt(await kv.get(USER_VERSION_KEY) || "0")
-	if (user_version < 1) await kv_migrate_1(kv)
-	await kv.put(USER_VERSION_KEY, "1")
+	if (user_version === LATEST_VERSION)
+		return;
+
+	switch (user_version) {
+		case 0:
+			await kv_migrate_1(kv)
+		// falls through
+		default:
+			break;
+	}
+
+	await kv.put(USER_VERSION_KEY, LATEST_VERSION.toString())
 }
 
 async function kv_migrate_1(kv: KVNamespace) {
@@ -107,7 +118,7 @@ async function seed(kv: KVNamespace) {
 // noinspection JSUnusedGlobalSymbols
 export default {
 	async fetch(req: Request, env: Environment): Promise<Response> {
-		console.log(req)
+		// console.log(req)
 		const url = new URL(req.url);
 		switch (url.pathname) {
 			case "/seed":
